@@ -1,0 +1,48 @@
+import os
+import shutil
+import time
+from datetime import datetime
+
+# Diretórios
+FROM_DIR = "/home/valcann/backupsFrom"
+TO_DIR = "/home/valcann/backupsTo"
+LOG_FROM = "/home/valcann/backupsFrom.log"
+LOG_TO = "/home/valcann/backupsTo.log"
+
+# Tempo atual
+now = time.time()
+dias_limite = 3
+segundos_limite = dias_limite * 86400
+
+# Função para formatar datas
+def formatar_data(timestamp):
+    return datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+
+# Abrir logs
+with open(LOG_FROM, "w") as log_from, open(LOG_TO, "w") as log_to:
+    log_from.write(f" Arquivos em {FROM_DIR}:\n\n")
+    log_to.write(f" Arquivos copiados para {TO_DIR}:\n\n")
+
+    for filename in os.listdir(FROM_DIR):
+        filepath = os.path.join(FROM_DIR, filename)
+        if os.path.isfile(filepath):
+            stat = os.stat(filepath)
+            size = stat.st_size
+            created = stat.st_ctime
+            modified = stat.st_mtime
+
+            # Log do backupsFrom
+            log_from.write(
+                f"{filename} | {size} bytes | Criado: {formatar_data(created)} | Modificado: {formatar_data(modified)}\n"
+            )
+
+            # Verifica idade do arquivo
+            idade = now - created
+            if idade > segundos_limite:
+                os.remove(filepath)
+            else:
+                destino = os.path.join(TO_DIR, filename)
+                shutil.copy2(filepath, destino)
+                log_to.write(
+                    f"{filename} | {size} bytes | Criado: {formatar_data(created)} | Copiado em: {formatar_data(now)}\n"
+                )
